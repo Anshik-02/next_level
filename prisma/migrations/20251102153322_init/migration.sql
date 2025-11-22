@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "PlayerSession" ALTER COLUMN "startTime" DROP DEFAULT,
+ALTER COLUMN "startTime" SET DATA TYPE TEXT;

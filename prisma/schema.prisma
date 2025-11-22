@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Device {
+  id          Int             @id @default(autoincrement())
+  deviceName  String          @unique
+  deviceType  DeviceType
+  isAvailable Boolean         @default(true)
+  status      DeviceStatus    @default(Active)
+  createdAt   DateTime        @default(now())
+  currsession PlayerSession[] @relation("DeviceSessions")
+  pricing     DevicePricing[]
+}
+
+model DevicePricing {
+  id           Int      @id @default(autoincrement()) 
+  device       Device   @relation(fields: [deviceId], references: [id])
+  deviceId     Int
+  players      Int
+  pricePer30   Float
+  pricePerHour Float
+  createdAt    DateTime @default(now())
+}
+
+enum DeviceType {
+  PC
+  Ps4
+  Ps5
+  VR
+  Pool
+}
+
+enum DeviceStatus {
+  Active
+  UnderMaintenance
+  Disabled
+}
+
+model PlayerSession {
+  id                  Int          @id @default(autoincrement())
+  playerName          String       @unique
+  players             Int
+  device              String
+  startTime           DateTime
+  endTime             DateTime?
+  totalPausedDuration Int          @default(0)
+  snacks              SnackOrder[]
+  snackBill           Float        @default(0) 
+  timeBill            Float        @default(0)  
+  totalBill           Float        @default(0)  
+  isActive            Boolean      @default(true)
+  endSession          Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  deviceRelation      Device       @relation("DeviceSessions", fields: [deviceId], references: [id])
+  deviceId            Int
+  totalTimePlayer     Int?
+  isPaused            Boolean      @default(false)
+  pausedAt            DateTime?
+}
+
+model SnackItem {
+  id        Int          @id @default(autoincrement())
+  name      String
+  price     Int
+  image     String?
+  quantity  Int
+  orders    SnackOrder[]
+  createdAt DateTime     @default(now())
+  isDeleted Boolean      @default(false)
+}
+
+model SnackOrder {
+  id              Int           @id @default(autoincrement())
+  snackItem       SnackItem     @relation(fields: [snackItemId], references: [id])
+  snackItemId     Int
+  playerSession   PlayerSession @relation(fields: [playerSessionId], references: [id])
+  playerSessionId Int
+  quantity        Int
+  totalPrice      Float
+  createdAt       DateTime      @default(now())
+}

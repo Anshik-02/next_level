@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "random": "c"
+    },
+    "prisma-smart-formatter.typescript.defaultFormatter": "esbenp.prettier-vscode",
+    "prisma-smart-formatter.typescriptreact.defaultFormatter": "esbenp.prettier-vscode",
+    "prisma-smart-formatter.prisma.defaultFormatter": "Prisma.prisma",
+    "prisma.pinToPrisma6": true
+}
