@@ -50,6 +50,7 @@ export function AddDevice() {
   const addPricing = useDeviceStore((state) => state.addPricing);
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -86,8 +87,8 @@ export function AddDevice() {
       if (res.status === 201) {
         addPricing(deviceId, values.pricing);
       }
-
-      toast.success("Device and pricing added successfully ✅");
+ setOpen(false); 
+      toast.success("Device and pricing added successfully ");
       router.refresh();
     } catch (error: any) {
       console.error(error);
@@ -98,9 +99,11 @@ export function AddDevice() {
   };
 
   return (
-    <Dialog>
+<Dialog open={open} onOpenChange={setOpen}>
+
       <DialogTrigger asChild>
-        <Button className="mt-2 bg-white text-gray-900 border border-gray-300 hover:bg-gray-100 flex items-center gap-2">
+
+        <Button     onClick={() => setOpen(true)}  className="mt-2 bg-white text-gray-900 border border-gray-300 hover:bg-gray-100 flex items-center gap-2">
           <Plus /> Add Device
         </Button>
       </DialogTrigger>

@@ -43,6 +43,7 @@ export function AddSnacks() {
   const setSnacks = useSnackData((state) => state.setSnacks);
   const [imageUrl, setImageUrl] = useState("");
   const router = useRouter();
+const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -61,6 +62,7 @@ export function AddSnacks() {
         toast.success("Snack created successfully ");
         setSnacks([...snacks, response.data.snack]);
         router.refresh();
+           setOpen(false);
       } else {
         toast.error(response.data.message || "Something went wrong ");
       }
@@ -70,9 +72,10 @@ export function AddSnacks() {
   };
 
   return (
-    <Dialog>
+<Dialog open={open} onOpenChange={setOpen}>
+
       <DialogTrigger asChild>
-        <button className="
+        <button  onClick={() => setOpen(true)} className="
           flex items-center w-45 justify-center gap-2 py-3   text-md
           bg-white border border-gray-300 text-gray-900
           hover:bg-gray-100 hover:border-gray-400

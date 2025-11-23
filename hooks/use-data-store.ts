@@ -100,27 +100,48 @@ type DeviceStore = {
   addDevice: (device: Device) => void;
   addPricing: (deviceId: number, newPricing: DevicePricing) => void;
   updatePricing: (deviceId: number, updatedPricing: DevicePricing[]) => void;
+
+  // ⬇️ NEW
+  fetchDevices: () => Promise<void>;
 };
 
 export const useDeviceStore = create<DeviceStore>((set) => ({
   devices: [],
+
   setDevices: (devices) => set({ devices }),
+
   addDevice: (device) =>
     set((state) => ({ devices: [...state.devices, device] })),
-addPricing: (deviceId, newPricing) =>
-  set((state) => ({
-    devices: state.devices.map((d) =>
-      d.id === deviceId
-        ? { ...d, pricing: [...(d.pricing || []), newPricing] }
-        : d
-    ),
-  })),
-updatePricing: (deviceId, updatedPricing) =>
-  set((state) => ({
-    devices: state.devices.map((d) =>
-      d.id === deviceId
-        ? { ...d, pricing: updatedPricing || [] }
-        : d
-    ),
-  })),
+
+  addPricing: (deviceId, newPricing) =>
+    set((state) => ({
+      devices: state.devices.map((d) =>
+        d.id === deviceId
+          ? { ...d, pricing: [...(d.pricing || []), newPricing] }
+          : d
+      ),
+    })),
+
+  updatePricing: (deviceId, updatedPricing) =>
+    set((state) => ({
+      devices: state.devices.map((d) =>
+        d.id === deviceId
+          ? { ...d, pricing: updatedPricing || [] }
+          : d
+      ),
+    })),
+
+  // ⭐ NEW: Fetch devices from backend API
+  fetchDevices: async () => {
+    try {
+      const response = await fetch("/api/device/info");
+      if (!response.ok) throw new Error("Failed to fetch devices");
+
+      const data = await response.json();
+      set({ devices: data });
+    } catch (error) {
+      console.error("Error fetching devices:", error);
+    }
+  },
 }));
+

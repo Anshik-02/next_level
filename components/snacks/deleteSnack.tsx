@@ -20,7 +20,6 @@ const DeleteSnack = ({snack}) => {
       const response = await axios.delete(`/api/snack/delete`, {
         data: { id: snack.id },
       });
-      console.log("End session response:", response.data);
     } catch (error) {
       console.error("Error ending session:", error);
     }

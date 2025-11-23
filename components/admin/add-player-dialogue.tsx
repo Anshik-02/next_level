@@ -1,3 +1,4 @@
+// components/admin/add-player-dialogue.tsx
 "use client";
 import axios from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,6 +37,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { usePlayerData } from "@/hooks/use-data-store";
 import { useEffect, useState } from "react";
+import { useDeviceStore } from "@/hooks/use-data-store";
 
 const formSchema = z.object({
   username: z.string().min(2, "Username must be at least 2 characters"),
@@ -45,10 +47,17 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function AddPlayer() {
+type Props = {
+  onSuccess?: () => void;
+};
+
+export function AddPlayer({ onSuccess }: Props) {
   const players = usePlayerData((state) => state.players);
   const setPlayers = usePlayerData((state) => state.setPlayers);
   const router = useRouter();
+const [open, setOpen] = useState(false);
+
+  const fetchDevices = useDeviceStore((s) => s.fetchDevices);
 
   const [availableDevices, setAvailableDevices] = useState<
     { id: number; deviceName: string; pricing: { players: number }[] }[]
@@ -56,16 +65,16 @@ export function AddPlayer() {
   const [selectedDevice, setSelectedDevice] = useState<string>("");
 
   useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        const response = await axios.get("/api/device/info");
-        const available = response.data.filter((d: any) => d.isAvailable);
-        setAvailableDevices(available);
-      } catch (err) {
-        console.error("Failed to fetch devices", err);
-      }
+    // Use the store fetchDevices to get latest devices initially
+    const load = async () => {
+      await fetchDevices();
+      // read devices from store
+      const devices = (await import("@/hooks/use-data-store")).useDeviceStore.getState().devices;
+      const available = devices.filter((d: any) => d.isAvailable);
+      setAvailableDevices(available);
     };
-    fetchDevices();
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const form = useForm<FormValues>({
@@ -83,6 +92,16 @@ export function AddPlayer() {
       if (response.data.success) {
         toast.success("Player created successfully 🎮");
         setPlayers([...players, response.data.player]);
+
+        // refresh devices in the store and local component
+        await fetchDevices();
+        const devices = (await import("@/hooks/use-data-store")).useDeviceStore.getState().devices;
+        setAvailableDevices(devices.filter((d: any) => d.isAvailable));
+
+        // call optional onSuccess callback (Page passes fetchDevices)
+        if (onSuccess) onSuccess();
+   setOpen(false);
+
         router.refresh();
       } else {
         toast.error(response.data.message || "Something went wrong ");
@@ -99,18 +118,20 @@ export function AddPlayer() {
     selectedDeviceObj?.pricing?.map((p) => p.players.toString()) || [];
 
   return (
-    <Dialog>
+<Dialog open={open} onOpenChange={setOpen}>
+
       <DialogTrigger asChild>
-       <button className="
+        <button onClick={() => setOpen(true)}
+          className="
   flex items-center gap-2 px-4 py-2 mb-5 mt-5
   rounded-lg  border border-slate-300
   bg-[#06B6D4]
 text-white font-medium hover:bg-[#0E7490] cursor-pointer transition-colors
-">
-  <Plus className="w-5 h-5 text-white" />
-  Add Player
-</button>
-
+"
+        >
+          <Plus className="w-5 h-5 text-white" />
+          Add Player
+        </button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md bg-white backdrop-blur-2xl text-black rounded-xl shadow-lg p-6">
@@ -165,7 +186,7 @@ text-white font-medium hover:bg-[#0E7490] cursor-pointer transition-colors
                           <SelectLabel>Devices</SelectLabel>
                           {availableDevices.length > 0 ? (
                             availableDevices.map((device) => (
-                              <SelectItem key={device.id}  value={device.deviceName}>
+                              <SelectItem key={device.id} value={device.deviceName}>
                                 {device.deviceName}
                               </SelectItem>
                             ))
@@ -182,7 +203,6 @@ text-white font-medium hover:bg-[#0E7490] cursor-pointer transition-colors
                 </FormItem>
               )}
             />
-
 
             <FormField
               control={form.control}
@@ -220,17 +240,11 @@ text-white font-medium hover:bg-[#0E7490] cursor-pointer transition-colors
 
             <div className="mt-4 flex justify-end gap-3">
               <DialogClose asChild>
-                <Button
-                  variant="default"
-                  className="text-gray-700 border-gray-800 "
-                >
+                <Button variant="default" className="text-gray-700 border-gray-800 ">
                   Cancel
                 </Button>
               </DialogClose>
-              <Button
-                type="submit"
-                className="bg-green-500 hover:bg-green-600 text-white"
-              >
+              <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white">
                 Start Session
               </Button>
             </div>

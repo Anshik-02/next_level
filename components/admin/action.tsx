@@ -14,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TooltipComponent } from "../toolTip";
-import { usePlayerData } from "@/hooks/use-data-store";
+import { usePlayerData, useDeviceStore } from "@/hooks/use-data-store";
 
 type ActionProps = {
   playerId: number;
@@ -26,28 +26,50 @@ const Action = ({ playerId, isActive, isPaused }: ActionProps) => {
   const updatePlayer = usePlayerData((state) => state.updatePlayer);
   const setPlayers = usePlayerData((state) => state.setPlayers);
 
-const sessionId = playerId;
-const pauseTimer = async () => {
-  try {
-    const response = await axios.patch(`/api/player/pauseTimer?sessionId=${sessionId}`, {
-      isPaused: !isPaused,
-    });
-    const updatedPlayer = response.data.updatedSession;
-     updatePlayer(playerId, {
-      isPaused: updatedPlayer.isPaused,
-      isActive: !updatedPlayer.isPaused, // active when not paused
-    });
-  } catch (err) {
-    console.error("Failed to pause/resume timer:", err);
-  }
-};
+  // 👉 Access device store
+  const devices = useDeviceStore((state) => state.devices);
+  const setDevices = useDeviceStore((state) => state.setDevices);
 
+  const sessionId = playerId;
+
+  const pauseTimer = async () => {
+    try {
+      const response = await axios.patch(`/api/player/pauseTimer?sessionId=${sessionId}`, {
+        isPaused: !isPaused,
+      });
+      const updatedPlayer = response.data.updatedSession;
+
+      updatePlayer(playerId, {
+        isPaused: updatedPlayer.isPaused,
+        isActive: !updatedPlayer.isPaused,
+      });
+    } catch (err) {
+      console.error("Failed to pause/resume timer:", err);
+    }
+  };
 
   const endSession = async () => {
     try {
-  const response = await axios.patch(`/api/player/endSession?sessionId=${sessionId}`);
-    setPlayers(prev => prev.filter(p => p.id !== playerId));
+      const response = await axios.patch(`/api/player/endSession?sessionId=${sessionId}`);
+
+      // 1️⃣ Remove player from UI
+      setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+
+      // 2️⃣ Update player state
       updatePlayer(playerId, { isActive: false, isPaused: false, endSession: true });
+
+      // 3️⃣ Extract device name from closed session
+      const endedSession = response.data.updatedSession;
+      const deviceName = endedSession.device;
+
+      // 4️⃣ Update device availability in Zustand
+      setDevices(
+        devices.map((device) =>
+          device.deviceName === deviceName
+            ? { ...device, isAvailable: true }
+            : device
+        )
+      );
 
     } catch (err) {
       console.error("Failed to end session:", err);
@@ -70,6 +92,7 @@ const pauseTimer = async () => {
             <TooltipComponent button={<X className="w-5 h-5 text-rose-400" />} text="End Session" />
           </span>
         </AlertDialogTrigger>
+
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">End this session?</AlertDialogTitle>

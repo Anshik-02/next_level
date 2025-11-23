@@ -42,6 +42,7 @@ const SnacksEditButton = ({ snack }) => {
   const setSnacks = useSnackData((state) => state.setSnacks);
   const [imageUrl, setImageUrl] = useState(snack.image || "");
   const router = useRouter();
+const [open, setOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -65,28 +66,29 @@ const SnacksEditButton = ({ snack }) => {
       const response = await axios.patch("/api/snack/update", value);
 
       if (response.data.success) {
-        toast.success("Snack updated successfully 🍪");
+        toast.success("Snack updated successfully ");
 
         setSnacks(
           snacks.map((s) =>
             s.id === response.data.snack.id ? response.data.snack : s
           )
         );
-
+   setOpen(false);
         router.refresh();
       } else {
-        toast.error(response.data.message || "Something went wrong 😕");
+        toast.error(response.data.message || "Something went wrong ");
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.message || "Server error 🚨");
+      toast.error(e.response?.data?.message || "Server error ");
     }
   };
 
   return (
     <div className="z-10">
-      <Dialog>
+<Dialog open={open} onOpenChange={setOpen}>
+
         <DialogTrigger asChild>
-          <Button
+          <Button  onClick={() => setOpen(true)}
             className="
               flex items-center gap-2 text-md
               bg-white px-4 py-2 border border-gray-300 text-gray-900
